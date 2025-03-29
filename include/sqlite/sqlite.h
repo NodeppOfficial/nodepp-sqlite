@@ -17,7 +17,7 @@ protected:
     };  ptr_t<NODE> obj;
 
     static int callback( void* data, int argc, char **argv, char **azColName ) { 
-        sql_item_t arguments; process::next();
+        sql_item_t arguments; // process::next();
         
         if( !data ) { return 0; } for ( auto x=0; x<argc; x++ ) 
         { arguments[ azColName[x] ] = argv[x] ? argv[x] : "NULL"; }
