@@ -4,6 +4,7 @@
 /*────────────────────────────────────────────────────────────────────────────*/
 
 #include <nodepp/nodepp.h>
+#include <nodepp/json.h>
 #include <sqlite3.h>
 
 namespace nodepp { using sql_item_t = map_t<string_t,string_t>; }
@@ -16,7 +17,6 @@ namespace nodepp { using sql_item_t = map_t<string_t,string_t>; }
 namespace nodepp { namespace _sqlite_ { GENERATOR( cb ){
 protected:
 
-    map_t<string_t,string_t> arguments;
     array_t<string_t> col;
     int num_fields, x;
 
@@ -30,11 +30,15 @@ public:
         for( x=0; x<num_fields; x++ )
            { col.push( string_t( (char*)sqlite3_column_name(res,x) ) ); }
 
-        while( sqlite3_step(res) == SQLITE_ROW ){
-          for( x=0; x<num_fields; x++ ){
-               auto y = string_t( (char*)sqlite3_column_text(res,x) );
-               arguments[ col[x] ] = y.empty() ? "NULL" : y;
-        } cb ( arguments ); coNext; }
+        while( sqlite3_step(res) == SQLITE_ROW ){ do {
+            auto object = map_t<string_t,string_t>();
+
+            for( x=0; x<num_fields; x++ ){
+                 auto y = string_t( (char*)sqlite3_column_text(res,x) );
+                 object[ col[x] ] = y.empty() ? "NULL" : y;
+            }
+
+        cb( object ); } while(0); coNext; }
 
         sqlite3_finalize( res );
 
