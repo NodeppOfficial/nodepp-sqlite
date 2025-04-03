@@ -4,6 +4,7 @@
 /*────────────────────────────────────────────────────────────────────────────*/
 
 #include <nodepp/nodepp.h>
+#include <nodepp/json.h>
 #include <sqlite3.h>
 
 namespace nodepp { using sql_item_t = map_t<string_t,string_t>; }
@@ -17,24 +18,23 @@ namespace nodepp { namespace _sqlite_ { GENERATOR( cb ){
 protected:
 
     map_t<string_t,string_t> arguments;
-    int num_fields, x, row;
     array_t<string_t> col;
+    int num_fields, x;
 
 public:
 
     template< class T, class U, class V, class Q > coEmit( T& fd, U& res, V& cb, Q& self ){
     gnStart
 
-        row        = sqlite3_step( res );
-        num_fields = sqlite3_column_count( res );
+        num_fields = sqlite3_column_count( res ); sqlite3_step( res );
 
         for( x=0; x<num_fields; x++ )
            { col.push( string_t( (char*)sqlite3_column_name(res,x) ) ); }
 
-        while( (row=sqlite3_step(res))==SQLITE_ROW ){
+        while( sqlite3_step(res) == SQLITE_ROW ){
           for( x=0; x<num_fields; x++ ){
                auto y = string_t( (char*)sqlite3_column_text(res,x) );
-               arguments[ col[x] ] = !y.empty() ? y : "NULL";
+               arguments[ col[x] ] = y.empty() ? "NULL" : y;
         } cb ( arguments ); coNext; }
 
         sqlite3_finalize( res );
@@ -95,7 +95,6 @@ public:
         }   if( res == NULL ) { return; }
 
         _sqlite_::cb task; process::add( task, obj->fd, res, cb, self );
-
     }
 
     array_t<sql_item_t> exec( const string_t& cmd ) const { array_t<sql_item_t> arr;
