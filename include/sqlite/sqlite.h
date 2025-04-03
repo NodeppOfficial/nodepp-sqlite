@@ -8,6 +8,46 @@
 
 namespace nodepp { using sql_item_t = map_t<string_t,string_t>; }
 
+/*────────────────────────────────────────────────────────────────────────────*/
+
+#ifndef NODEPP_SQLITE_GENERATOR
+#define NODEPP_SQLITE_GENERATOR
+
+namespace nodepp { namespace _sqlite_ { GENERATOR( cb ){
+protected:
+
+    map_t<string_t,string_t> arguments;
+    int num_fields, x, row;
+    array_t<string_t> col;
+
+public:
+
+    template< class T, class U, class V, class Q > coEmit( T& fd, U& res, V& cb, Q& self ){
+    coStart
+
+        row        = sqlite3_step( res );
+        num_fields = sqlite3_column_count( res );
+
+        for( x=0; x<num_fields; x++ )
+           { col.push( string_t( (char*)sqlite3_column_name(res,x) ) ); }
+
+        while( (row=sqlite3_step(res))==SQLITE_ROW ){
+          for( x=0; x<num_fields; x++ ){
+               auto y = string_t( (char*)sqlite3_column_text(res,x) );
+               arguments[ col[x] ] = !y.empty() ? y : "NULL";
+        } cb ( arguments ); coNext; }
+
+        sqlite3_finalize( res );
+
+    coStop
+    }
+
+};}}
+
+#endif
+
+/*────────────────────────────────────────────────────────────────────────────*/
+
 namespace nodepp { class sqlite_t {
 protected:
 
@@ -15,16 +55,6 @@ protected:
         sqlite3 *fd = nullptr;
         int   state = 1;
     };  ptr_t<NODE> obj;
-
-    static int callback( void* data, int argc, char **argv, char **azColName ) {
-        sql_item_t arguments; if( data==nullptr || argc<=0 ) { return 0; }
-
-        process::next(); for ( auto x=0; x<argc; x++ )
-        { arguments[ azColName[x] ] = argv[x] ? argv[x] : "NULL"; }
-        (*type::cast<function_t<void,sql_item_t>>(data))( arguments );
-
-        return 0;
-    }
 
 public:
 
@@ -55,20 +85,34 @@ public:
     /*─······································································─*/
 
     void exec( const string_t& cmd, const function_t<void,sql_item_t>& cb ) const {
-        if( obj->state == 0 || obj->fd == nullptr ){ return; } char* msg;
-        if( sqlite3_exec( obj->fd, cmd.data(), callback, (void*)&cb, &msg) != SQLITE_OK ){
-            string_t message ( msg ); sqlite3_free( msg );
+        if( obj->state == 0 || obj->fd == nullptr ){ return; }
+
+        sqlite3_stmt *res; int rc; char* msg; auto self = type::bind( this );
+
+        if( sqlite3_prepare_v2( obj->fd, cmd.get(), -1, &res, NULL ) != SQLITE_OK ) {
+            string_t message ( sqlite3_errmsg( obj->fd ) );
             process::error( "SQL Error: ", message );
-        }
+        }   if( res == NULL ) { return; }
+
+        _sqlite_::cb task; process::add( task, obj->fd, res, cb, self );
+
     }
 
-    array_t<sql_item_t> exec( const string_t& cmd ) const { array_t<sql_item_t> res;
-        if( obj->state == 0 || obj->fd == nullptr ){ return nullptr; } char* msg;
-        function_t<void,sql_item_t> cb = [&]( sql_item_t args ){ res.push( args ); };
-        if( sqlite3_exec( obj->fd, cmd.data(), callback, (void*)&cb, &msg) != SQLITE_OK ){
-            string_t message ( msg ); sqlite3_free( msg );
+    array_t<sql_item_t> exec( const string_t& cmd ) const { array_t<sql_item_t> arr;
+        function_t<void,sql_item_t> cb = [&]( sql_item_t args ){ arr.push( args ); };
+
+        if( obj->state == 0 || obj->fd == nullptr ){ return nullptr; }
+
+        sqlite3_stmt *res; int rc; char* msg; auto self = type::bind( this );
+
+        if( sqlite3_prepare_v2( obj->fd, cmd.get(), -1, &res, NULL ) != SQLITE_OK ) {
+            string_t message ( sqlite3_errmsg( obj->fd ) );
             process::error( "SQL Error: ", message );
-        }   return res;
+        }   if( res == NULL ) { return nullptr; }
+
+        _sqlite_::cb task; process::await( task, obj->fd, res, cb, self );
+
+        return arr;
     }
 
 };}
