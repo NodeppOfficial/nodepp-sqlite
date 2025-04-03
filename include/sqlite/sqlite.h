@@ -34,7 +34,7 @@ public:
             auto object = map_t<string_t,string_t>();
 
             for( x=0; x<num_fields; x++ ){
-                 char* y = sqlite3_column_text(res,x);
+                 char* y = (char*) sqlite3_column_text(res,x);
                  object[ col[x] ] = y ? y : "NULL";
             }
 
