@@ -23,7 +23,7 @@ protected:
 public:
 
     template< class T, class U, class V, class Q > coEmit( T& fd, U& res, V& cb, Q& self ){
-    coStart
+    gnStart
 
         row        = sqlite3_step( res );
         num_fields = sqlite3_column_count( res );
@@ -39,7 +39,7 @@ public:
 
         sqlite3_finalize( res );
 
-    coStop
+    gnStop
     }
 
 };}}
