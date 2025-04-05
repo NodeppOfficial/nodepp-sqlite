@@ -24,7 +24,7 @@ public:
     template< class T, class U, class V, class Q > coEmit( T& fd, U& res, V& cb, Q& self ){
     gnStart
 
-        num_fields = sqlite3_column_count( res ); sqlite3_step( res );
+        num_fields = sqlite3_column_count( res ); // sqlite3_step( res );
 
         for( x=0; x<num_fields; x++ )
            { col.push( string_t( (char*)sqlite3_column_name(res,x) ) ); }
