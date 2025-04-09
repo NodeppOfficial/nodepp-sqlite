@@ -100,7 +100,7 @@ public:
     }
 
     array_t<sql_item_t> exec( const string_t& cmd ) const { array_t<sql_item_t> arr;
-        function_t<void,sql_item_t> cb = [&]( sql_item_t args ){ arr.push( args ); };
+        function_t<void,sql_item_t> cb = [&]( sql_item_t args ){ arr.push(args); };
 
         if( obj->state == 0 || obj->fd == nullptr ){ return nullptr; }
 
