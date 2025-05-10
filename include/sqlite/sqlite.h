@@ -87,7 +87,7 @@ public:
     /*─······································································─*/
 
     void exec( const string_t& cmd, const function_t<void,sql_item_t>& cb ) const {
-        if( obj->state == 0 || obj->fd == nullptr ){ return; }
+        if( cmd.empty() || obj->state==0 || obj->fd==nullptr ){ return; }
 
         sqlite3_stmt *res; int rc; char* msg; auto self = type::bind( this );
 
@@ -101,8 +101,7 @@ public:
 
     array_t<sql_item_t> exec( const string_t& cmd ) const { array_t<sql_item_t> arr;
         function_t<void,sql_item_t> cb = [&]( sql_item_t args ){ arr.push(args); };
-
-        if( obj->state == 0 || obj->fd == nullptr ){ return nullptr; }
+        if( cmd.empty() || obj->state==0 || obj->fd==nullptr ){ return nullptr; }
 
         sqlite3_stmt *res; int rc; char* msg; auto self = type::bind( this );
 
