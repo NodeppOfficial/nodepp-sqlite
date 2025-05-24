@@ -18,18 +18,19 @@ protected:
 
     array_t<string_t> col;
     int num_fields, x;
+    int err;
 
 public:
 
     template< class T, class U, class V, class Q > coEmit( T& fd, U& res, V& cb, Q& self ){
     gnStart
 
-        num_fields = sqlite3_column_count( res ); // sqlite3_step( res );
+        num_fields = sqlite3_column_count( res ); for( x=0; x<num_fields; x++ )
+        { col.push(string_t((char*)sqlite3_column_name(res,x))); } coYield(1);
 
-        for( x=0; x<num_fields; x++ )
-           { col.push( string_t( (char*)sqlite3_column_name(res,x) ) ); }
+        coWait( (err=sqlite3_step(res)) == SQLITE_BUSY );
+        if( err != SQLITE_ROW ){ coGoto(2); } do {
 
-        while( sqlite3_step(res) == SQLITE_ROW ){ do {
             auto object = map_t<string_t,string_t>();
 
             for( x=0; x<num_fields; x++ ){
@@ -37,9 +38,8 @@ public:
                  object[ col[x] ] = y ? y : "NULL";
             }
 
-        cb( object ); } while(0); coNext; }
-
-        sqlite3_finalize( res );
+        cb( object ); } while(0); coSet(1); return 0;
+        coYield(2); sqlite3_finalize( res );
 
     gnStop
     }
