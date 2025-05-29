@@ -28,7 +28,7 @@ public:
         num_fields = sqlite3_column_count( res ); for( x=0; x<num_fields; x++ )
         { col.push(string_t((char*)sqlite3_column_name(res,x))); } coYield(1);
 
-        coWait( (err=sqlite3_step(res)) == SQLITE_BUSY );
+        coWait( (err=sqlite3_step(res))==SQLITE_BUSY );
         if( err != SQLITE_ROW ){ coGoto(2); } do {
 
             auto object = map_t<string_t,string_t>();
@@ -38,8 +38,10 @@ public:
                  object[ col[x] ] = y ? y : "NULL";
             }
 
-        cb( object ); } while(0); coSet(1); return 0;
-        coYield(2); sqlite3_finalize( res );
+        cb( object ); } while(0);
+
+        coGoto(1); coYield(2);
+        sqlite3_finalize(res);
 
     gnStop
     }
@@ -89,30 +91,30 @@ public:
     void exec( const string_t& cmd, const function_t<void,sql_item_t>& cb ) const {
         if( cmd.empty() || obj->state==0 || obj->fd==nullptr ){ return; }
 
-        sqlite3_stmt *res; int rc; char* msg; auto self = type::bind( this );
+        _sqlite_::cb task; auto self = type::bind( this );
+        sqlite3_stmt *res; int rc; char* msg;
 
         if( sqlite3_prepare_v2( obj->fd, cmd.get(), -1, &res, NULL ) != SQLITE_OK ) {
             string_t message ( sqlite3_errmsg( obj->fd ) );
             process::error( "SQL Error: ", message );
         }   if( res == NULL ) { return; }
 
-        _sqlite_::cb task; process::add( task, obj->fd, res, cb, self );
+        process::poll::add( task, obj->fd, res, cb, self );
     }
 
     array_t<sql_item_t> exec( const string_t& cmd ) const { array_t<sql_item_t> arr;
         function_t<void,sql_item_t> cb = [&]( sql_item_t args ){ arr.push(args); };
         if( cmd.empty() || obj->state==0 || obj->fd==nullptr ){ return nullptr; }
 
-        sqlite3_stmt *res; int rc; char* msg; auto self = type::bind( this );
+        _sqlite_::cb task; auto self = type::bind( this );
+        sqlite3_stmt *res; int rc; char* msg;
 
         if( sqlite3_prepare_v2( obj->fd, cmd.get(), -1, &res, NULL ) != SQLITE_OK ) {
             string_t message ( sqlite3_errmsg( obj->fd ) );
             process::error( "SQL Error: ", message );
         }   if( res == NULL ) { return nullptr; }
 
-        _sqlite_::cb task; process::await( task, obj->fd, res, cb, self );
-
-        return arr;
+        process::await( task, obj->fd, res, cb, self ); return arr;
     }
 
 };}
