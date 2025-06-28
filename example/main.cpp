@@ -1,5 +1,5 @@
 #include <nodepp/nodepp.h>
-#include <sqlite.h>
+#include <sqlite/sqlite.h>
 
 using namespace nodepp;
 
@@ -36,9 +36,9 @@ void onMain() {
         VALUES (4, 'Pipi', 32, 'California', 20000.00 );
     )");
 
-    db.exec("SELECT * from COMPANY",[]( object_t args ){
+    db.exec("SELECT * from COMPANY",[]( sql_item_t args ){
         for( auto &x: args.keys() ){
-             console::log( x, "->", args[x].as<string_t>() );
+             console::log( x, "->", args[x] );
         }
     });
 
