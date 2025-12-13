@@ -1,6 +1,37 @@
 # Nodepp SQLite Wrapper
-
 A high-performance, asynchronous SQLite database client built on the Nodepp framework. This library utilizes Nodepp's coroutines, events, and promises to provide non-blocking database access, ensuring your application's I/O operations don't freeze the event loop.
+
+## Dependencies & Cmake Integration
+```bash
+#libsqlite3-dev
+🪟: pacman -S mingw-w64-ucrt-x86_64-sqlite3
+🐧: sudo apt install libsqlite3-dev
+```
+```bash
+include(FetchContent)
+
+FetchContent_Declare(
+	nodepp
+	GIT_REPOSITORY   https://github.com/NodeppOfficial/nodepp
+	GIT_TAG          origin/main
+	GIT_PROGRESS     ON
+)
+FetchContent_MakeAvailable(nodepp)
+
+FetchContent_Declare(
+	nodepp-sqlite
+	GIT_REPOSITORY   https://github.com/NodeppOfficial/nodepp-sqlite
+	GIT_TAG          origin/main
+	GIT_PROGRESS     ON
+)
+FetchContent_MakeAvailable(nodepp-sqlite)
+
+#[...]
+
+target_link_libraries( #[...]
+	PUBLIC nodepp nodepp-sqlite #[...]
+)
+```
 
 ## Getting Started
 ```cpp
@@ -29,7 +60,6 @@ void main() {
 The library provides three distinct methods for executing SQL, catering to different concurrency needs: Promise-based, Synchronous, and Streaming/Callback.
 
 #### 1. Asynchronous with Promise (.resolve())
-
 This is the recommended modern approach for asynchronous queries. It executes the query in the background and returns a promise that resolves with the complete array of results.
 
 ```cpp
@@ -48,7 +78,6 @@ db.resolve("SELECT name FROM users WHERE id < 10;")
 ```
 
 #### 2. Synchronous/Blocking (.await())
-
 This method executes the command and blocks the current process until the entire result set is collected.
 
 ```cpp
@@ -84,14 +113,10 @@ db.emit("SELECT * FROM large_table;", []( sql_item_t row ) {
 });
 ```
 
-## Dependencies
-```bash
-#libsqlite3-dev
-🪟: pacman -S mingw-w64-ucrt-x86_64-sqlite3
-🐧: sudo apt install libsqlite3-dev
-```
-
 ## Compilation
 ```bash
 g++ -o main main.cpp -I ./include -lsqlite3 ; ./main
 ```
+
+## License
+**Nodepp-SQLite** is distributed under the MIT License. See the LICENSE file for more details.

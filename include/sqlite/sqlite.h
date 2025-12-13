@@ -43,8 +43,7 @@ public:
         { col.push(string_t((char*)sqlite3_column_name(ctx,x))); }
 
         coYield(1); coWait((err=sqlite3_step(ctx)) == SQLITE_BUSY );
-        if( err!=SQLITE_ROW || !self->is_used() || self->is_closed() ) 
-          { coGoto(2); } do {
+        if( err!=SQLITE_ROW ) { coGoto(2); } do {
 
             auto object = map_t<string_t,string_t>();
 
